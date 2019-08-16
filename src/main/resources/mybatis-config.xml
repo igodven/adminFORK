@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+  PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+
+	<!--设置驼峰表达式 -->
+	<settings>
+		<setting name="mapUnderscoreToCamelCase" value="true" />
+	</settings>
+	<!--使用别名在mapper.xml文件中  -->
+	<typeAliases>
+		<package name="com.m520it.crud.bean" />
+	</typeAliases>
+	<!--引用使用分页插件的配置 -->
+	<plugins>
+		<plugin interceptor="com.github.pagehelper.PageInterceptor">
+			<!--使分页的参数合理化 不会出现-1等数字 -->
+			<property name="reasonable" value="true" />
+		</plugin>
+	</plugins>
+</configuration>

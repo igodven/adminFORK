@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.3.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd">
+
+	<context:component-scan
+		base-package="com.m520it">
+		<!--除了配置了controller注解的类,所有的类都需要被扫描 -->
+		<context:exclude-filter type="annotation"
+			expression="org.springframework.stereotype.Controller" />
+	</context:component-scan>
+	<!--数据原的配置 -->
+	<context:property-placeholder
+		location="classpath:db.properties" />
+	<bean id="c3P0PooledDataSource"
+		class="com.mchange.v2.c3p0.ComboPooledDataSource">
+		<property name="driverClass" value="${jdbc.driverClass}"></property>
+		<property name="jdbcUrl" value="${jdbc.url}"></property>
+		<property name="user" value="${jdbc.username}"></property>
+		<property name="password" value="${jdbc.password}"></property>
+	</bean>
+	<!-- 加入一个可以执行批量操作的sqlSession -->
+	<bean id="sqlSessionTemplate"
+		class="org.mybatis.spring.SqlSessionTemplate">
+		<constructor-arg name="sqlSessionFactory"
+			ref="sqlSessionFactory"></constructor-arg>
+		<!--配置可以进行批量操作 -->
+		<constructor-arg name="executorType" value="BATCH"></constructor-arg>
+	</bean>
+
+	<bean id="sqlSessionFactory"
+		class="org.mybatis.spring.SqlSessionFactoryBean">
+		<!--关联mybatis 的全局配置文件 -->
+		<property name="configLocation"
+			value="classpath:mybatis-config.xml"></property>
+		<!--关联数据酷连接池 -->
+		<property name="dataSource" ref="c3P0PooledDataSource"></property>
+		<!--指定mybatis的mapper的映射文件 -->
+		<property name="mapperLocations"
+			value="classpath:mapper/*.xml"></property>
+	</bean>
+	<!--配置一个扫描包,可以将dao的实现扫描进IOC的容器中 -->
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.m520it.crud.dao"></property>
+	</bean>
+
+	<!--配置事物控制 -->
+	<bean id="transactionManager"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="c3P0PooledDataSource"></property>
+	</bean>
+
+	<!--开启基于注解的事物,还有基于xml的事物配置(重要的使用xml的形式) -->
+	<aop:config>
+		<!-- 对哪些方法做增强,业务层的方法做增强 -->
+		<aop:pointcut
+			expression="execution(* com.m520it.crud.service..*(..))" id="txPoint" />
+		<!--增强的关联(事物和业务层的关联) -->
+		<aop:advisor advice-ref="txAdvice" pointcut-ref="txPoint" />
+	</aop:config>
+	<!--配置事物增强,事物如何切入 -->
+	<tx:advice id="txAdvice"
+		transaction-manager="transactionManager">
+		<tx:attributes>
+			<!-- 所有的方法都是事物方法 -->
+			<tx:method name="*" />
+			<!--所有的查询方法都是只读事物 -->
+			<tx:method name="get*" read-only="true" />
+		</tx:attributes>
+
+	</tx:advice>
+
+</beans>
